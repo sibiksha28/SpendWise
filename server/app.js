@@ -30,6 +30,15 @@ function getBodyUserId(request, response) {
   return userId
 }
 
+function getResourceId(request, response) {
+  if (!mongoose.isValidObjectId(request.params.id)) {
+    response.status(400).json({ error: 'A valid resource id is required' })
+    return null
+  }
+
+  return request.params.id
+}
+
 app.get('/api/health', (request, response) => {
   response.json({ status: 'ok', database: mongoose.connection.readyState === 1 ? 'connected' : 'disconnected' })
 })
@@ -57,6 +66,52 @@ app.post('/api/budgets', async (request, response, next) => {
     const budget = await Budget.create({ user: userId, category, amount, period, startsOn, endsOn, alertAt, isActive })
 
     response.status(201).json({ data: budget })
+  } catch (error) {
+    next(error)
+  }
+})
+
+app.put('/api/transactions/:id', async (request, response, next) => {
+  try {
+    const userId = getBodyUserId(request, response)
+    const transactionId = getResourceId(request, response)
+    if (!userId || !transactionId) return
+
+    const { type, amount, merchant, category, note, occurredAt, isRecurring } = request.body
+    const transaction = await Transaction.findOneAndUpdate(
+      { _id: transactionId, user: userId },
+      { type, amount, merchant, category, note, occurredAt, isRecurring },
+      { new: true, runValidators: true },
+    ).lean()
+
+    if (!transaction) {
+      return response.status(404).json({ error: 'Transaction not found for this user' })
+    }
+
+    response.json({ data: transaction })
+  } catch (error) {
+    next(error)
+  }
+})
+
+app.put('/api/budgets/:id', async (request, response, next) => {
+  try {
+    const userId = getBodyUserId(request, response)
+    const budgetId = getResourceId(request, response)
+    if (!userId || !budgetId) return
+
+    const { category, amount, period, startsOn, endsOn, alertAt, isActive } = request.body
+    const budget = await Budget.findOneAndUpdate(
+      { _id: budgetId, user: userId },
+      { category, amount, period, startsOn, endsOn, alertAt, isActive },
+      { new: true, runValidators: true },
+    ).lean()
+
+    if (!budget) {
+      return response.status(404).json({ error: 'Budget not found for this user' })
+    }
+
+    response.json({ data: budget })
   } catch (error) {
     next(error)
   }
