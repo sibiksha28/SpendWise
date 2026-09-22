@@ -10,11 +10,13 @@ import {
 	CreditCard,
 	LayoutDashboard,
 	MoreHorizontal,
+	 Pencil,
 	Plus,
 	Search,
 	Settings,
 	ShoppingBag,
 	Sparkles,
+	Trash2,
 	Utensils,
 	Wallet,
 } from 'lucide-react'
@@ -23,9 +25,9 @@ const weeklySpend = [42, 68, 54, 81, 59, 88, 63]
 const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
 
 const initialTransactions = [
-	{ name: 'Whole Foods Market', category: 'Groceries', amount: '-$84.20', date: 'Today, 10:42 AM', icon: ShoppingBag, color: 'mint' },
-	{ name: 'Blue Bottle Coffee', category: 'Coffee & drinks', amount: '-$6.50', date: 'Today, 8:15 AM', icon: Coffee, color: 'peach' },
-	{ name: 'Spotify Premium', category: 'Subscriptions', amount: '-$11.99', date: 'Yesterday', icon: CreditCard, color: 'lavender' },
+	{ id: 'transaction-1', name: 'Whole Foods Market', category: 'Groceries', amount: '-$84.20', date: 'Today, 10:42 AM', icon: ShoppingBag, color: 'mint' },
+	{ id: 'transaction-2', name: 'Blue Bottle Coffee', category: 'Coffee & drinks', amount: '-$6.50', date: 'Today, 8:15 AM', icon: Coffee, color: 'peach' },
+	{ id: 'transaction-3', name: 'Spotify Premium', category: 'Subscriptions', amount: '-$11.99', date: 'Yesterday', icon: CreditCard, color: 'lavender' },
 ]
 
 const categorySpending = [
@@ -88,23 +90,47 @@ function CategoryBreakdown() {
 	return <section className="panel category-panel"><div className="panel-header"><div><p className="eyebrow">Where it goes</p><h2>Top categories</h2></div><button className="icon-button" aria-label="More category options"><MoreHorizontal size={19} /></button></div><div className="category-list">{categorySpending.map((item) => <div className="category-row" key={item.label}><div className={`category-icon ${item.color}`}>{item.label === 'Housing' ? <Wallet size={17} /> : item.label === 'Food & dining' ? <Utensils size={17} /> : <ArrowUpRight size={17} />}</div><div className="category-info"><div><span>{item.label}</span><strong>{item.value} <small>of {item.budget}</small></strong></div><div className="progress"><span className={item.color} style={{ width: `${item.percent}%` }} /></div></div></div>)}</div><button className="text-button">View all categories <ArrowUpRight size={15} /></button></section>
 }
 
-function Transactions({ transactions }) {
-	return <section className="panel transactions-panel"><div className="panel-header"><div><p className="eyebrow">Your money trail</p><h2>Recent transactions</h2></div><button className="text-button">View all <ArrowUpRight size={15} /></button></div><div className="transaction-list">{transactions.map((transaction) => { const Icon = transaction.icon; return <div className="transaction" key={`${transaction.name}-${transaction.amount}`}><div className={`transaction-icon ${transaction.color}`}><Icon size={17} /></div><div className="transaction-name"><strong>{transaction.name}</strong><span>{transaction.category} · {transaction.date}</span></div><strong className="amount">{transaction.amount}</strong></div> })}</div></section>
+function Transactions({ transactions, onEdit, onDelete }) {
+	return <section className="panel transactions-panel"><div className="panel-header"><div><p className="eyebrow">Your money trail</p><h2>Recent transactions</h2></div><button className="text-button">View all <ArrowUpRight size={15} /></button></div><div className="transaction-list">{transactions.map((transaction) => { const Icon = transaction.icon; return <div className="transaction" key={transaction.id}><div className={`transaction-icon ${transaction.color}`}><Icon size={17} /></div><div className="transaction-name"><strong>{transaction.name}</strong><span>{transaction.category} · {transaction.date}</span></div><strong className="amount">{transaction.amount}</strong><div className="transaction-actions"><button className="row-action" aria-label={`Edit ${transaction.name}`} onClick={() => onEdit(transaction)}><Pencil size={14} /></button><button className="row-action danger" aria-label={`Delete ${transaction.name}`} onClick={() => onDelete(transaction)}><Trash2 size={14} /></button></div></div> })}</div></section>
 }
 
 export default function App() {
 	const [active, setActive] = useState('Overview')
 	const [transactions, setTransactions] = useState(initialTransactions)
 	const [showComposer, setShowComposer] = useState(false)
+	const [editingTransaction, setEditingTransaction] = useState(null)
 	const [expense, setExpense] = useState('')
 
-	function addExpense(event) {
+	function saveExpense(event) {
 		event.preventDefault()
 		if (!expense.trim()) return
-		setTransactions([{ name: expense, category: 'New expense', amount: '-$24.00', date: 'Just now', icon: CreditCard, color: 'blue' }, ...transactions])
+		if (editingTransaction) {
+			setTransactions((current) => current.map((transaction) => transaction.id === editingTransaction.id ? { ...transaction, name: expense, date: 'Updated just now' } : transaction))
+		} else {
+			setTransactions((current) => [{ id: `transaction-${Date.now()}`, name: expense, category: 'New expense', amount: '-$24.00', date: 'Just now', icon: CreditCard, color: 'blue' }, ...current])
+		}
 		setExpense('')
+		setEditingTransaction(null)
 		setShowComposer(false)
 	}
 
-	return <div className="app-shell"><Sidebar active={active} setActive={setActive} /><main className="main-content"><header className="topbar"><div className="breadcrumb"><span>Personal account</span><span>/</span><strong>{active}</strong></div><div className="topbar-actions"><button className="search-button"><Search size={18} /><span>Search anything</span><kbd>⌘ K</kbd></button><button className="bell-button" aria-label="Notifications"><Bell size={19} /><i /></button><div className="mini-avatar">AS</div></div></header><div className="content-wrap"><section className="welcome-row"><div><p className="eyebrow">Tuesday, September 22, 2026</p><h1>Good morning, Alex <span>✦</span></h1><p className="subheading">Here&apos;s your financial picture at a glance.</p></div><button className="primary-button" onClick={() => setShowComposer(true)}><Plus size={18} /> Add expense</button></section><section className="metrics-grid"><MetricCard label="Total balance" value="$12,842.60" note="Across all accounts" trend="+$248.20" icon={Wallet} tone="dark" /><MetricCard label="Spent this month" value="$2,486.40" note="of $3,200 budget" trend="↓ 8.4%" icon={ArrowDownRight} tone="cream" /><MetricCard label="Saved this month" value="$1,640.00" note="Goal: $2,000" trend="+16.2%" icon={Sparkles} tone="yellow" /></section><div className="dashboard-grid"><SpendingChart /><CategoryBreakdown /><Transactions transactions={transactions} /></div></div></main>{showComposer && <div className="modal-backdrop" onClick={() => setShowComposer(false)}><form className="composer" onSubmit={addExpense} onClick={(event) => event.stopPropagation()}><div className="panel-header"><div><p className="eyebrow">Quick capture</p><h2>Add an expense</h2></div><button type="button" className="icon-button" onClick={() => setShowComposer(false)}>×</button></div><label htmlFor="expense-name">What did you spend on?</label><input id="expense-name" autoFocus value={expense} onChange={(event) => setExpense(event.target.value)} placeholder="e.g. Weekend groceries" /><button className="primary-button" type="submit"><Plus size={18} /> Save expense</button></form></div>}</div>
+	function editTransaction(transaction) {
+		setEditingTransaction(transaction)
+		setExpense(transaction.name)
+		setShowComposer(true)
+	}
+
+	function deleteTransaction(transaction) {
+		if (window.confirm(`Delete ${transaction.name}?`)) {
+			setTransactions((current) => current.filter((item) => item.id !== transaction.id))
+		}
+	}
+
+	function closeComposer() {
+		setExpense('')
+		setEditingTransaction(null)
+		setShowComposer(false)
+	}
+
+	return <div className="app-shell"><Sidebar active={active} setActive={setActive} /><main className="main-content"><header className="topbar"><div className="breadcrumb"><span>Personal account</span><span>/</span><strong>{active}</strong></div><div className="topbar-actions"><button className="search-button"><Search size={18} /><span>Search anything</span><kbd>⌘ K</kbd></button><button className="bell-button" aria-label="Notifications"><Bell size={19} /><i /></button><div className="mini-avatar">AS</div></div></header><div className="content-wrap"><section className="welcome-row"><div><p className="eyebrow">Tuesday, September 22, 2026</p><h1>Good morning, Alex <span>✦</span></h1><p className="subheading">Here&apos;s your financial picture at a glance.</p></div><button className="primary-button" onClick={() => setShowComposer(true)}><Plus size={18} /> Add expense</button></section><section className="metrics-grid"><MetricCard label="Total balance" value="$12,842.60" note="Across all accounts" trend="+$248.20" icon={Wallet} tone="dark" /><MetricCard label="Spent this month" value="$2,486.40" note="of $3,200 budget" trend="↓ 8.4%" icon={ArrowDownRight} tone="cream" /><MetricCard label="Saved this month" value="$1,640.00" note="Goal: $2,000" trend="+16.2%" icon={Sparkles} tone="yellow" /></section><div className="dashboard-grid"><SpendingChart /><CategoryBreakdown /><Transactions transactions={transactions} onEdit={editTransaction} onDelete={deleteTransaction} /></div></div></main>{showComposer && <div className="modal-backdrop" onClick={closeComposer}><form className="composer" onSubmit={saveExpense} onClick={(event) => event.stopPropagation()}><div className="panel-header"><div><p className="eyebrow">Quick capture</p><h2>{editingTransaction ? 'Edit expense' : 'Add an expense'}</h2></div><button type="button" className="icon-button" onClick={closeComposer}>×</button></div><label htmlFor="expense-name">What did you spend on?</label><input id="expense-name" autoFocus value={expense} onChange={(event) => setExpense(event.target.value)} placeholder="e.g. Weekend groceries" /><button className="primary-button" type="submit">{editingTransaction ? <Pencil size={18} /> : <Plus size={18} />} {editingTransaction ? 'Update expense' : 'Save expense'}</button></form></div>}</div>
 }
