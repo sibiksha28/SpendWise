@@ -19,8 +19,47 @@ function getUserId(request, response) {
   return userId
 }
 
+function getBodyUserId(request, response) {
+  const { userId } = request.body
+
+  if (!userId || !mongoose.isValidObjectId(userId)) {
+    response.status(400).json({ error: 'A valid userId is required in the request body' })
+    return null
+  }
+
+  return userId
+}
+
 app.get('/api/health', (request, response) => {
   response.json({ status: 'ok', database: mongoose.connection.readyState === 1 ? 'connected' : 'disconnected' })
+})
+
+app.post('/api/transactions', async (request, response, next) => {
+  try {
+    const userId = getBodyUserId(request, response)
+    if (!userId) return
+
+    const { type, amount, merchant, category, note, occurredAt, isRecurring } = request.body
+    const transaction = await Transaction.create({ user: userId, type, amount, merchant, category, note, occurredAt, isRecurring })
+
+    response.status(201).json({ data: transaction })
+  } catch (error) {
+    next(error)
+  }
+})
+
+app.post('/api/budgets', async (request, response, next) => {
+  try {
+    const userId = getBodyUserId(request, response)
+    if (!userId) return
+
+    const { category, amount, period, startsOn, endsOn, alertAt, isActive } = request.body
+    const budget = await Budget.create({ user: userId, category, amount, period, startsOn, endsOn, alertAt, isActive })
+
+    response.status(201).json({ data: budget })
+  } catch (error) {
+    next(error)
+  }
 })
 
 app.get('/api/transactions', async (request, response, next) => {
@@ -95,6 +134,12 @@ app.get('/api/summary', async (request, response, next) => {
 
 app.use((error, request, response, next) => {
   console.error(error)
+  if (error.name === 'ValidationError' || error.name === 'CastError') {
+    return response.status(400).json({ error: 'Request validation failed', details: error.message })
+  }
+  if (error.code === 11000) {
+    return response.status(409).json({ error: 'A matching record already exists' })
+  }
   response.status(500).json({ error: 'Unable to fetch data' })
 })
 
