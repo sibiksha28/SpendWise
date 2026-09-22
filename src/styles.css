@@ -1,4 +1,5 @@
 @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap');
+.transaction-actions { display: flex; gap: 3px; margin-left: 4px; opacity: 0; transition: opacity .2s ease; }.transaction:hover .transaction-actions, .transaction:focus-within .transaction-actions { opacity: 1; }.row-action { display: grid; place-items: center; width: 27px; height: 27px; border-radius: 6px; color: #7b9681; background: #edf3ed; }.row-action:hover { color: #42604b; background: #dce9dd; }.row-action.danger { color: #b27668; background: #f8e8e3; }.row-action.danger:hover { color: #984d3d; background: #f3d8d0; }
 
 :root { font-family: 'DM Sans', sans-serif; color: #292826; background: #f5f3ee; font-synthesis: none; --ink: #292826; --muted: #898780; --line: #e7e3db; --paper: #fffdfa; --green: #6e9b82; }
 * { box-sizing: border-box; }
